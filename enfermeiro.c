@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 
 void imprimeRecepcionista();
 String imprimeGravidade(int gravidade);
@@ -71,4 +71,4 @@ String imprimeGravidade(int gravidade)
 		return "3 - Não Urgente";
 	else
 		return "Gravidade não cadastrada";
-}
+}*/

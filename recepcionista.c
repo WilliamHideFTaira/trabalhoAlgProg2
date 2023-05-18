@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 
 void imprimeRecepcionista();
 int menuRecepcionista()
@@ -42,4 +42,4 @@ void imprimeRecepcionista()
 {
 	printf("\n\n              Recepcionista\n");
 
-}
+}*/
