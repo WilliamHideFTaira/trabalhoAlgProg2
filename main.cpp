@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 //#include "funcoes.cpp"
-#define MAX 40
+#define MAX 27
 #define MAXPS 12
+#define tamCPF 11
 //=================================================================STRUCTS======================================================
 struct tipoData
 {
@@ -13,24 +15,24 @@ struct tipoData
 
 struct tipoFuncionario
 {
-	char nome[MAX];
-	int CPF;
+	char nome[MAX+1];
+	char CPF[tamCPF+1];
 	char senha[MAXPS];
 };
 
 struct tipoPaciente
 {
 	char nome[MAX];
-	int CPF;
+	char CPF[tamCPF+1];
 	tipoData nasc;
 };
 
 //============================================================DECLARAÇÃO FUNÇÕES================================================
 void imprimeUPALogin();
-void preencheVetor(tipoFuncionario v[], int *p, int q);
-void preencheVetorP(tipoPaciente v[], int *p, int q);
+void preencheVetor(tipoFuncionario v[], FILE *p, int q);
+void preencheVetorP(tipoPaciente v[], FILE *p, int q);
 void imprimetxtFunc(int a);
-bool verificaCredenciais(char c[], char n[], int cpf, tipoPessoa v[], int X);
+bool verificaCredenciais(char c[], char cpf[], tipoFuncionario v[], int X);
 void menuRecepcionista();
 void menuEnfermeiro();
 void menuMedico();
@@ -46,6 +48,7 @@ int main()
 
 	//=========INICIALIZANDO VETORES COM SEUS TAMANHOS==============
 
+	tipoFuncionario *recepcionista = NULL;
 	ptRecepcionista = fopen("recepcionistas.txt", "r");
 	if (ptRecepcionista == NULL)
 	{
@@ -54,13 +57,14 @@ int main()
 	else
 	{
 		fscanf(ptRecepcionista, "%d", &quantR);
-		tipoFuncionario recepcionista[quantR];
+		recepcionista = (tipoFuncionario*)malloc(quantR * sizeof(tipoFuncionario));
 		preencheVetor(recepcionista, ptRecepcionista, quantR);
 		fclose(ptRecepcionista);
 	}
 	
 	//=========INICIALIZANDO VETORES COM SEUS TAMANHOS==============
 
+	tipoFuncionario *enfermeiro = NULL;
 	ptEnfermeiro = fopen("enfermeiros.txt", "r");
 	if (ptEnfermeiro == NULL)
 	{
@@ -69,13 +73,14 @@ int main()
 	else
 	{
 		fscanf(ptRecepcionista, "%d", &quantE);
-		tipoFuncionario enfermeiro[quantE];
+		enfermeiro = (tipoFuncionario*)malloc(quantE * sizeof(tipoFuncionario));
 		preencheVetor(enfermeiro, ptEnfermeiro, quantE);
 		fclose(ptRecepcionista);
 	}
 
 	//=========INICIALIZANDO VETORES COM SEUS TAMANHOS==============
 
+	tipoFuncionario *medico = NULL;
 	ptMedico = fopen("medicos.txt", "r");
 	if (ptMedico == NULL)
 	{
@@ -84,13 +89,13 @@ int main()
 	else
 	{
 		fscanf(ptMedico, "%d", &quantM);
-		tipoFuncionario medico[quantM];
+		medico = (tipoFuncionario*)malloc(quantM * sizeof(tipoFuncionario));
 		preencheVetor(medico, ptMedico, quantM);
 		fclose(ptMedico);
 	}
 	
 	//=========INICIALIZANDO VETOR PACIENTE COM SEU TAMANHO========== (PASSIVEL DE MUDANÇA)
-	
+	tipoPaciente *paciente = NULL;
 	ptPaciente = fopen("pacientes.txt", "r");
 	if (ptPaciente == NULL)
 	{
@@ -99,30 +104,32 @@ int main()
 	else
 	{
 		fscanf(ptPaciente, "%d", &quantP);
-		tipoPaciente paciente[quantP];
+		paciente = (tipoPaciente*)malloc(quantP * sizeof(tipoPaciente));
 		preencheVetorP(paciente, ptPaciente, quantP);
 		fclose(ptPaciente);
 	}
 	//===============================MENU===========================
 	do
 	{
-		/*char senha[MAXPS];
-		int CPF;*/
-		printf("\n====================== MENU - UPA ==================");
-		printf("\n1 - Recepcionista\n2 - Enfermeiro(a)\n3 - Médico(a)\n0 - Encerrar Programa\n");
+		char senha[MAXPS];
+		char CPF[tamCPF+1];
+		int c;
+		printf("\n============================================ MENU - UPA ============================================\n");
+		printf("\n1 - Recepcionista\n2 - Enfermeiro(a)\n3 - Medico(a)\n0 - Encerrar Programa\n");
 		scanf("%d", &op);
+		if (op == 0) // PARA FINALIZAR O PROGRAMA, PASSÍVEL DE MUDANÇA
+			return 0; 
 		do
 		{
-			int c;
 			imprimeUPALogin();
 			imprimetxtFunc(op);
-			printf("\nCPF (apenas números): ");
-			scanf("%d", &CPF);
+			printf("\nCPF (apenas numeros): ");
+			scanf(" %s", CPF);
 			printf("\nSenha: ");
-			printf(" %s", senha);
+			scanf(" %s", senha);
 			if (op == 1)
 			{
-				if (verificaCredenciais(senha, CPF, recepcionista, quantR))
+				if (verificaCredenciais(senha, CPF, recepcionista, quantR) == true)
 				{
 					menuRecepcionista();
 					c = 0;
@@ -136,7 +143,7 @@ int main()
 
 			else if (op == 2)
 			{
-				if (verificaCredenciais(senha, CPF, enfermeiro, quantE))
+				if (verificaCredenciais(senha, CPF, enfermeiro, quantE) == true)
 				{
 					menuEnfermeiro();
 					c = 0;
@@ -150,7 +157,7 @@ int main()
 
 			else if (op == 3)
 			{
-				if (verificaCredenciais(senha, CPF, medico, quantM))
+				if (verificaCredenciais(senha, CPF, medico, quantM) == true)
 				{
 					menuMedico();
 					c = 0;
@@ -161,84 +168,12 @@ int main()
 					scanf("%d", &c);
 				}
 			}
-		}while (c!=0);
-		/*
-		if (op == 1)
-		{
-			do
-			{
-				char senha[MAXPS];
-				int CPF;
-				int c;
-				imprimeUPALogin();
-				printf("\n             1- Recepcionista");
-				printf("\nCPF (apenas números): ");
-				scanf("%d", &CPF);
-				printf("\nSenha: ");
-				printf(" %s", senha);
-				if (verificaCredenciais(senha, CPF, recepcionista, quantR))
-				{
-					menuRecepcionista();
-					c = 0;
-				}
-				else
-				{
-					printf("Senha incorreta. Digite 0 para voltar ou 1 para tentar novamente\n\n");
-					scanf("%d", &c);
-				}
-			}while (c != 0);
-		}
-		else if (op == 2)
-		{
-			do
-			{
-				char senha[MAXPS];
-				int CPF;
-				int c;
-				imprimeUPALogin();
-				printf("\n             2- Enfermeiro");
-				printf("\nCPF (apenas números): ");
-				scanf("%d", &CPF);
-				printf("\nSenha: ");
-				printf(" %s", senha);
-				if (verificaCredenciais(senha, CPF, enfermeiro, quantE))
-				{
-					menuEnfermeiro();
-					c = 0;
-				}
-				else
-				{
-					printf("Senha incorreta. Digite 0 para voltar ou 1 para tentar novamente\n\n");
-					scanf("%d", &c);
-				}
-			}while (c != 0);
-		}
-		else if (op == 3)
-		{
-			do
-			{
-				char senha[MAXPS];
-				int CPF;
-				int c;
-				imprimeUPALogin();
-				printf("\n             1- Recepcionista");
-				printf("\nCPF (apenas números): ");
-				scanf("%d", &CPF);
-				printf("\nSenha: ");
-				printf(" %s", senha);
-				if (verificaCredenciais(senha, CPF, recepcionista, quantR))
-				{
-					menuRecepcionista();
-					c = 0;
-				}
-				else
-				{
-					printf("Senha incorreta. Digite 0 para voltar ou 1 para tentar novamente\n\n");
-					scanf("%d", &c);
-				}
-			}while (c != 0);
-		}*/
+		}while (c != 0);
 	}while (op != 0);
+	free(recepcionista);
+	free(enfermeiro);
+	free(medico);
+	free(paciente);
 	return 0;
 }
 //===================================FUNCOES=================================
@@ -248,41 +183,41 @@ void imprimeUPALogin()
 	printf("               UPA - Login\n");
 }
 
-void preencheVetor(tipoFuncionario v[], int *p, int q)
+void preencheVetor(tipoFuncionario v[], FILE *p, int q)
 {
 	for (int i = 0; i < q; i++)
 	{
-		fscanf(p, " %[^\n]", v[i].nome);
-		fscanf(p, "%d", &v[i].CPF);
+		fscanf(p, " %27[^\n]", v[i].nome);
+		fscanf(p, " %11s", v[i].CPF);
 		fscanf(p, " %s", v[i].senha);
 	}
 }
 
-void preencheVetorP(tipoPaciente v[], int *p, int q)
+void preencheVetorP(tipoPaciente v[], FILE *p, int q)
 {
 	for (int i = 0; i < q; i++)
 	{
-		fscanf(p, " %[^\n]", v[i].nome);
+		fscanf(p, " %27[^\n]", v[i].nome);
 		fscanf(p, "%d/%d/%d", &v[i].nasc.dia, &v[i].nasc.mes, &v[i].nasc.ano);
-		fscanf(p, "%d", &v[i].CPF);
+		fscanf(p, " %s", v[i].CPF);
 	}
 }
 
 void imprimetxtFunc(int a)
 {
 	if (a == 1)
-		printf("\n             1- Recepcionista");
+		printf("             1- Recepcionista\n");
 	else if (a == 2)
 	{
-		printf("\n              2- Enfermeiro");
+		printf("              2- Enfermeiro\n");
 	}
 	else if (a == 3)
 	{
-		printf("\n               3- Médico");
+		printf("               3- Médico\n");
 	}
 }
 
-bool verificaCredenciais(char c[], int cpf, tipoPessoa v[], int X)
+bool verificaCredenciais(char c[], char cpf[], tipoFuncionario v[], int X)
 {
 	int tam;
     char cSenha[strlen(c) + 1];
@@ -299,15 +234,6 @@ bool verificaCredenciais(char c[], int cpf, tipoPessoa v[], int X)
             cSenha[i] = (char) ((int) c[i] + 3);
         }
     } 
-    /*int i = 0, j = tam - 1;
-    while (i < j)
-    {
-        char aux = cSenha[i];
-        cSenha[i] = cSenha[j];
-        cSenha[j] = aux;
-        i++;
-        j--;
-    }*/
     int j = tam - 1;
     for (int i = 0; i < j; i++)
     {
@@ -316,16 +242,24 @@ bool verificaCredenciais(char c[], int cpf, tipoPessoa v[], int X)
         cSenha[j] = aux;
         j--;
     }
-
+    printf("%s\n\n", cSenha);
     for (int i = 0; i < X; i++)
     {
-    	if(v[i].CPF == cpf)
-       	{
-        	if (strcmp(v[i].senha, cSenha) == 0)
-            	return true;
-            else
-            	i = X;
-        }
+    	if (strcmp(v[i].CPF, cpf) == 0 && strcmp(v[i].senha, cSenha) == 0)
+    		return true;
     }
     return false;
+}
+
+void menuRecepcionista()
+{
+	printf("AQUI SERA MENU DO RECEPCIONISTA");
+}
+void menuEnfermeiro()
+{
+	printf("AQUI SERA MENU ENFERMEIRO");
+}
+void menuMedico()
+{
+	printf("AQUI SERA MENU MEDICO");
 }
