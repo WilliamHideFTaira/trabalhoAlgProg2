@@ -48,7 +48,9 @@ int buscaPaciente(char cpf[], tipoPaciente *i, tipoPaciente *AT1, tipoPaciente *
 void imprimeSituacao(int N);
 int calculaIdade(tipoPaciente *P)
 void imprimeGravidade(int gravidade);
-int alteraGravidade(int ng, tipoPaciente v[]);
+void alteraGravidade(int ng, tipoPaciente *p, tipoPaciente *&L1, tipoPaciente *&L2, tipoPaciente *&L3)
+void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f);
+int inserefimLista(tipoPaciente *P, tipoPaciente *&I, tipoPaciente *&F); //////////////////////
 void imprimePObservacao(tipoPaciente v[], int q);
 int removePObservacao(char cpf[], tipoPaciente v[], int q);
 
@@ -363,13 +365,13 @@ void menuRecepcionista()
 	}while (op1 != 0);
 	printf("                          Logout -> Menu Principal\n");
 }
-tipoPaciente* removePaciente(char cpf[], tipoPaciente *&i, tipoPaciente *&f)
+tipoPaciente removePaciente(char cpf[], tipoPaciente *&i, tipoPaciente *&f)
 {
 	tipoPaciente *p, *q;
 	tipoPaciente aux;
 	p = NULL;
 	q = i;
-	while (q != NULL && q->CPF != cpf)
+	while (q != NULL && strcmp(q->CPF, cpf) != 0)
 	{
 		p = q;
 		q = q->prox;
@@ -381,7 +383,7 @@ tipoPaciente* removePaciente(char cpf[], tipoPaciente *&i, tipoPaciente *&f)
 		if (p == NULL)
 		{
 			if(i == f)
-				i == f == i->prox;
+				i = f = i->prox;
 			else
 				i = i->prox;
 		}
@@ -411,22 +413,22 @@ int buscaPaciente(char cpf[], tipoPaciente *i, tipoPaciente *AT1, tipoPaciente *
 {
 	tipoPaciente *aux;
 	aux = i;
-	while (aux != NULL && aux->CPF != cpf)
+	while (aux != NULL && strcmp(aux->CPF, cpf) != 0)
 		aux = aux->prox;
 	if (aux != NULL)
 		return 1;
 	aux = AT1;
-	while (aux != NULL && aux->CPF != cpf)
+	while (aux != NULL && strcmp(aux->CPF, cpf) != 0)
 		aux = aux->prox;
 	if (aux != NULL)
 		return 2;
 	aux = AT2;
-	while (aux != NULL && aux->CPF != cpf)
+	while (aux != NULL && strcmp(aux->CPF, cpf) != 0)
 		aux = aux->prox;
 	if (aux != NULL)
 		return 3;
 	aux = AT3;
-	while (aux != NULL && aux->CPF != cpf)
+	while (aux != NULL && strcmp(aux->CPF, cpf) != 0)
 		aux = aux->prox;
 	if (aux != NULL)
 		return 4;
@@ -445,7 +447,7 @@ void imprimeSituacao(int N)
 		printf("fila de espera para chamada medica (Nao Urgente)\n");
 }
 //=====================================================================================================================
-void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *&filaAt1, tipoPaciente *&filaAt2, tipoPaciente *&filaAt3)
+void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *&filaAt1I, tipoPaciente *&filaAt1F, tipoPaciente *&filaAt2I, tipoPaciente *&filaAt2F, tipoPaciente *&filaAt3I, tipoPaciente *&filaAt3F)
 {
 	int op2;
 	char cpf[tamCPF+1];
@@ -477,11 +479,11 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 				printf("\n1 - Emergente    2 - Urgente    3 - Nao Urgente\n");
 				scanf("%d", &filaTI->gravidade);
 				if(filaTI->gravidade == 1)
-					filaAtend(filaTI, filaTF, filaAt1);
+					filaAtend(filaTI, filaTF, filaAt1I, filaAt1F);
 				else if(filaTI->gravidade == 2)
-					filaAtend(filaTI, filaTF, filaAt2);
+					filaAtend(filaTI, filaTF, filaAt2I, filaAt2F);
 				else if(filaTI->gravidade == 3)
-					filaAtend(filaTI, filaTF, filaAt3);
+					filaAtend(filaTI, filaTF, filaAt3I, filaAt3F);
 			}
 			else
 				printf("Não há pacientes na fila\n");
@@ -521,19 +523,25 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 							printf("\n\n   1- Emergente  2 - Urgente  3 - Nao Urgente\n");
 							printf("Digite a nova Gravidade do(a) %s", primeiroNome);
 							scanf("%d", &novaGravidade);
-							if (aux)
+							if (aux->gravidade == novaGravidade)
+								printf("Erro na alteração\n");
+							else
+							{
+								alteraGravidade(novaGravidade, aux, filaAt1I, filaAt1F, filaAt2I, filaAt2F, filaAt3I, filaAt3F);
+								printf("Gravidade alterada com sucesso!\n");
+							}
 						}
 						else if(op2a == 2)
 						{
 							char novoSintoma[100];
 							printf("\n\n            2 - Alterar Sintoma\n");
-							//printf("\nDigite o(s) novo(s) sintoma(s) de %s", pacienteTriagem[ind].nome);
-							printf("Digite o(s) novo(s) sintoma(s)"); // PRINT DE TESTE, equivale a linha 388
+							printf("\nDigite o(s) novo(s) sintoma(s) de %s", primeiroNome);
 							scanf(" %[^\n]", novoSintoma);
-							/*if (alteraSintoma(novoSintoma, pacienteTriagem[ind].sintoma) == 1)
-								printf("\nSintomas Alterados com sucesso!\n");
+							if (alteraSintoma(aux, novoSintoma) == 0)
+								printf("\nErro na alteração!\n");
 							else
-								printf("\nErro na alteração!\n");*/}
+								printf("\nSintomas Alterados com sucesso!\n");
+						}
 					}while (op2a != 0);
 				}
 			}while (strcmp(cpf, "0") != 0);	
@@ -571,17 +579,17 @@ tipoPaciente* buscaPacienteEsp(char cpf[], tipoPaciente *lst1, tipoPaciente *lst
 {
 	tipoPaciente *q;
 	q = lst1;
-	while (q != NULL && q->CPF != cpf)
+	while (q != NULL && strcmp(q->CPF, cpf) != 0)
 		q = q->prox;
 	if (q != NULL)
 		return q;
 	q = lst2;
-	while (q != NULL && q->CPF != cpf)
+	while (q != NULL && strcmp(q->CPF, cpf) != 0)
 		q = q->prox;
 	if (q != NULL)
 		return q;
 	q = lst3;
-	while (q != NULL && q->CPF != cpf)
+	while (q != NULL && strcmp(q->CPF, cpf) != 0)
 		q = q->prox;
 	if (q != NULL)
 		return q;
@@ -599,19 +607,77 @@ void imprimeGravidade(int gravidade)
 	else
 		printf("Gravidade nao cadastrada!\n");
 }
-int alteraGravidade(int ng, int g) //FUNÇÃO PARA ALTERAR GRAVIDADE - PREENCHER POSTERIORMENTE
+void alteraGravidade(int ng, tipoPaciente *p, tipoPaciente *&L1i, tipoPaciente *&L1f, tipoPaciente *&L2i, tipoPaciente *&L2f, tipoPaciente *&L3i, tipoPaciente *&L3f)
 {
-	/*if (ERRO)
-		return 0;*/
+	if (p->gravidade == 1)
+		removeNo(p, L1i, L1f);
+	else if (p->gravidade == 2)
+		removeNo(p, L2i, L2f);
+	if (p->gravidade == 3)
+		removeNo(p, L3i, L3f);
+
+
+	if (p->gravidade == 1)
+		removeNo(p, L1i, L2f); 
+	if (ng == 1)
+		inserefimLista(p, L1i, L1f);
+	else if(ng == 2)
+		inserefimLista(p, L2i, L2f);
+	else if(ng == 3)
+		inserefimLista(p, L3i, L3f);
+}
+
+void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f)
+{
+	tipoPaciente *p = NULL;
+    tipoPaciente *q = i;
+
+    while (q != NULL && q != P) {
+        p = q;
+        q = q->prox;
+    }
+
+    if (q == NULL) {
+        // Nó não encontrado na lista
+        return;
+    }
+
+    if (p == NULL) {
+        // Nó está no início da lista
+        i = q->prox;
+    } else {
+        p->prox = q->prox;
+    }
+
+    if (q == f) {
+        // Nó está no fim da lista
+        f = p;
+    }
+
+    free(q);
+}
+
+void inserefimLista(tipoPaciente *P, tipoPaciente *&I, tipoPaciente *&F)
+{
+	if (I == NULL)
+        I = F = P;
+    else
+    {
+        F->prox = P;
+        F = P;
+    }
+    P->prox = NULL;
+}
+
+int alteraSintoma(tipoPaciente *p, char ss[])
+{
+	if (strcasecmp(p->sintomas, ss) == 0)
+		return 0;
+	strcpy(p->sintomas, ss);
 	return 1;
 }
-int alteraSintoma(char ns[], char s[])
-{
-	/*if (ERRO)
-		return 0;*/
-	return 1;
-}
-void menuMedico()
+
+void menuMedico(tipoPaciente *&lst1i )
 {
 	int op3;
 	do
@@ -621,27 +687,15 @@ void menuMedico()
 		scanf("%d", &op3);
 		if (op3 == 1)
 		{
-			int op3a;
-			printf("NOME IDADE CPF\n"); // (ATUALIZAR PARA IMPRIMIR DADOS DO CLIENTE) pacienteTriagem[i].nome / pacienteTriagem[i].cpf (PRIMEIRO DA FILA)
-			printf("\nPeso Altura Sexo\n"); // (ATUALIZAR PARA IMPRIMIR DADOS DO CLIENTE)
-			printf("Sintomas: \n");
-			printf("sintoma urgencia\n"); // (ATUALIZAR PARA IMPRIMIR DADOS DO CLIENTE)
-			printf("1 - Encerrar Consulta\n2 - Colocar em Observacao\n");
-			scanf("%d", &op3a);
-			if(op3a == 1)
-			{
-				char parecer[100];
-				printf("Parecer da consulta: ");
-				scanf(" %[^\n]", parecer);
-				printf("\nFUNCAO PARA INSERIR NOME CPF PACIENTES + PARECER MEDICO EM ARQUIVO TXT.\nImprimindo parecer: %s\n", parecer);
-				/* FAZER FUNÇÃO PARA GUARDAR INFORMAÇOES NO ARQUIVO atendidos.txt, MOSTRANDO SUCESSO OU NAO DO ARMAZENAMENTO (MODELO ABAIXO)
-				NOME CPF
-				PARECER*/
-			}
-			else if (op3a == 2)
-			{
-				printf("FUNCAO PARA INSERIR PACIENTES NA OBSERVACAO");
-			}
+			if(lst1i == NULL)
+				if (lst2i == NULL)
+					if (lst3i == NULL)
+						printf("Não há clientes nas filas\n");
+					else
+						consulta(lst3i, lst3f);
+				else
+					consulta(lst2i, lst2f);
+			else consulta(lst1i, lst1f);
 		}
 		else if (op3 == 2)
 		{
@@ -661,6 +715,50 @@ void menuMedico()
 		}
 	}while (op3 != 0);
 	printf("                          Logout -> Menu Principal\n");
+}
+
+void consulta(tipoPaciente *&i, tipoPaciente *&f)
+{
+	int op3a;
+	tipoPaciente *aux;
+	aux = i;
+	printf("%s   ", aux->nome);
+	printf("%d   ", calculaIdade(aux));
+	printf("%s\n", aux->CPF);
+	printf("%.2fkg   ", aux->peso);
+	printf("%2.fm", aux->altura); 
+	printf("%c\n" aux->sexo);
+	printf("Sintomas: \n");
+	printf("%s   ", aux->sintomas);
+	imprimeGravidade(aux->gravidade);
+	printf("\n\n");
+	printf("1 - Encerrar Consulta\n2 - Colocar em Observacao\n");
+	scanf("%d", &op3a);
+	if(op3a == 1)
+	{
+		char parecer[100];
+		printf("Parecer da consulta: ");
+		scanf(" %[^\n]", parecer);
+		gravaAtendidos(aux, parecer);
+	}
+	else if (op3a == 2)
+	{
+		printf("FUNCAO PARA INSERIR PACIENTES NA OBSERVACAO");
+	}
+}
+
+void gravaAtendidos(tipoPaciente *p, char parecer[])
+{
+    FILE* arq = fopen("atendidos.txt", "a");
+
+    if (arq == NULL) 
+    	printf("Erro ao abrir arquivo atendidos.txt\n");
+    else
+    {
+        fprintf(arq, "%s, %s\n%s\n", p->nome, p->CPF, parecer);
+        fclose(arq);
+        printf("Consulta armazenada com sucesso!\n");
+    }
 }
 
 void imprimePObservacao(tipoPaciente v[], int q)
