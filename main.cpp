@@ -2,57 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "corpoFunc.h"
-#define MAX 40
-#define MAXPS 11
-#define tamCPF 11 
-//=================================================================STRUCTS======================================================
-struct tipoData
-{
-	int dia;
-	int mes;
-	int ano;
-};
-
-struct tipoFuncionario
-{
-	char nome[MAX+1];
-	char CPF[tamCPF+1];
-	char senha[MAXPS+1]; // 11 + '\0'
-};
-
-struct tipoPaciente
-{
-	char nome[MAX];
-	char CPF[tamCPF+1];
-	float peso;
-	float altura;
-	char sexo;
-	char sintomas[100];
-	int gravidade;
-	tipoData nasc;
-	struct tipoPaciente *prox;
-};
-
-//============================================================DECLARAÇÃO FUNÇÕES================================================
-void imprimeUPALogin();
-void preencheVetor(tipoFuncionario v[], FILE *p, int q);
-void cadastraPaciente(tipoPaciente *&i, tipoPaciente *&f, char n[], char cpf[], tipoData d);
-void imprimetxtFunc(int a);
-bool verificaCredenciais(char c[], char cpf[], tipoFuncionario v[], int X);
-void menuRecepcionista();
-void menuEnfermeiro();
-void menuMedico();
-int removePaciente(char cpf[], tipoPaciente *&i, tipoPaciente *&f);
-void inspilhaRemovidos(tipoPaciente x, tipoPaciente *&lst);
-int buscaPaciente(char cpf[], tipoPaciente *i, tipoPaciente *AT1, tipoPaciente *AT2, tipoPaciente *AT3);
-void imprimeSituacao(int N);
-int calculaIdade(tipoPaciente *P)
-void imprimeGravidade(int gravidade);
-void alteraGravidade(int ng, tipoPaciente *p, tipoPaciente *&L1, tipoPaciente *&L2, tipoPaciente *&L3)
-void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f);
-int inserefimLista(tipoPaciente *P, tipoPaciente *&I, tipoPaciente *&F); //////////////////////
-void imprimePObservacao(tipoPaciente v[], int q);
-int removePObservacao(char cpf[], tipoPaciente v[], int q);
 
 //============================================================================MAIN=====================================================================================
 int main()
@@ -88,10 +37,10 @@ int main()
 	}
 	else
 	{
-		fscanf(ptRecepcionista, "%d", &quantE);
+		fscanf(ptEnfermeiro, "%d", &quantE);
 		enfermeiro = (tipoFuncionario*)malloc(quantE * sizeof(tipoFuncionario));
 		preencheVetor(enfermeiro, ptEnfermeiro, quantE);
-		fclose(ptRecepcionista);
+		fclose(ptEnfermeiro);
 	}
 
 	//=========INICIALIZANDO VETORES COM SEUS TAMANHOS==============
@@ -120,21 +69,23 @@ int main()
 	else
 	{
 		fscanf(ptTriagem, "%d", &quantPT);
+		char nomeP[MAX];
+		char cpfP[tamCPF];
+		tipoData nascP;
 		for (int i = 0; i < quantPT; i++)
 		{
-			char nomeP[28];
-			char cpfP[tamCPF];
-			tipoData nascP;
-			fscanf(p, " %27[^\n]", nomeP);
-			fscanf(p, "%d/%d/%d", &nascP.dia, &nascP.mes, &nascP.ano);
-			fscanf(p, " %s", cpfP);
+			fscanf(ptTriagem, " %27[^\n]", nomeP);
+			fscanf(ptTriagem, "%d/%d/%d", &nascP.dia, &nascP.mes, &nascP.ano);
+			fscanf(ptTriagem, " %s", cpfP);
 			cadastraPaciente(filaTriagemI, filaTriagemF, nomeP, cpfP, nascP);
 		}
 		fclose(ptTriagem);
 	}
 
 	//=========INICIALIZANDO VETOR PACIENTES OBSERVACAO COM SEU TAMANHO========== (NECESSÁRIAS ALTERAÇÕES)
-	tipoPaciente *pacienteObs = NULL;
+	tipoPaciente *pacienteObsI = NULL;
+	tipoPaciente *pacienteObsF = NULL;
+	//tipoPaciente *pacRemovidos = NULL;
 	ptObs = fopen("observacao.txt", "r");
 	if (ptObs == NULL)
 	{
@@ -143,11 +94,35 @@ int main()
 	else
 	{
 		fscanf(ptObs, "%d", &quantPO);
-		pacienteObs = (tipoFuncionario*)malloc(quantM * sizeof(tipoFuncionario));
-		preencheVetor(medico, ptObs, quantM);
-		fclose(ptObs);
+		char nomeP[MAX];
+		char cpfP[tamCPF];
+		tipoData nascP;
+		char s;
+		float p, h;
+		char sint[50];
+		for (int i = 0; i < quantPT; i++)
+		{
+			fscanf(ptTriagem, " %27[^\n]", nomeP);
+			//printf("%s ", nomeP);
+			fscanf(ptTriagem, "%d/%d/%d", &nascP.dia, &nascP.mes, &nascP.ano);
+			//printf("%d/%d/%d ", nascP.dia, nascP.mes, nascP.ano);
+			fscanf(ptTriagem, " %s", cpfP);
+			//printf("%s ", cpfP);
+			fscanf(ptTriagem, " %c", &s);
+			//printf("%c ", s);
+			fscanf(ptTriagem, "%f", &p);
+			//printf("%.2f ", p);
+			fscanf(ptTriagem, "%f", &h);
+			//printf("%.2f ", h);
+			fscanf(ptTriagem, " %[^\n]", sint);
+			//printf("%s ", sint);
+			cadastraPacienteO(pacienteObsI, pacienteObsF, nomeP, cpfP, nascP, s, p, h, sint);
+		}
+		fclose(ptTriagem);
 	}
 	
+	tipoPaciente *filaAT1i = NULL, *filaAT1f = NULL, *filaAT2i = NULL, *filaAT2f = NULL, *filaAT3i = NULL, *filaAT3f = NULL, *lstObi = NULL, *lstObf = NULL, *ptPilhaRemovidos = NULL;
+
 	//==============================================================MENU==============================================================
 	//==============================================================MENU==============================================================
 	//==============================================================MENU==============================================================
@@ -175,7 +150,7 @@ int main()
 				{
 					if (verificaCredenciais(senha, CPF, recepcionista, quantR) == true)
 					{
-						menuRecepcionista();
+						menuRecepcionista(filaTriagemI, filaTriagemF, filaAT1i, filaAT1f, filaAT2i, filaAT1f, filaAT3i, filaAT3f, ptPilhaRemovidos);
 						c = 0;
 					}
 					else
@@ -189,7 +164,7 @@ int main()
 				{
 					if (verificaCredenciais(senha, CPF, enfermeiro, quantE) == true)
 					{
-						menuEnfermeiro();
+						menuEnfermeiro(filaTriagemI, filaTriagemF, filaAT1i, filaAT1f, filaAT2i, filaAT1f, filaAT3i, filaAT3f);
 						c = 0;
 					}
 					else
@@ -203,7 +178,7 @@ int main()
 				{
 					if (verificaCredenciais(senha, CPF, medico, quantM) == true)
 					{
-						menuMedico();
+						menuMedico(filaAT1i, filaAT1f, filaAT2i, filaAT1f, filaAT3i, filaAT3f, lstObi, lstObf);
 						c = 0;
 					}
 					else
@@ -215,13 +190,18 @@ int main()
 			}while (c != 0);
 		}
 	}while (op != 0);
-
-	// CRIAR FUNÇÃO PARA GUARDAR PACIENTES NAO ATENDIDOS OU AGUARDANDO ATENDIMENTO EM ARQUIVO "naoAtendidos.txt"
-	// CRIAR FUNÇÃO PARA GUARDAR PACIENTES EM OBSERVAÇÃO EM ARQUIVO "observacao.txt"
 	free(recepcionista);
 	free(enfermeiro);
 	free(medico);
-	free(paciente);
+	// CRIAR FUNÇÃO PARA GUARDAR PACIENTES NAO ATENDIDOS OU AGUARDANDO ATENDIMENTO EM ARQUIVO "naoAtendidos.txt"
+
+	empilharRestantes(filaTriagemI, filaTriagemF, ptPilhaRemovidos);
+	empilharRestantes(filaAT1i, filaAT1i, ptPilhaRemovidos);
+	empilharRestantes(filaAT2i, filaAT2f, ptPilhaRemovidos);
+	empilharRestantes(filaAT3i, filaAT3f, ptPilhaRemovidos);
+	arquivaNAtend(ptPilhaRemovidos);
+	// CRIAR FUNÇÃO PARA GUARDAR PACIENTES EM OBSERVAÇÃO EM ARQUIVO "observacao.txt"
+	arquivaObs(lstObi, lstObf);
 	return 0;
 }
 
@@ -254,11 +234,33 @@ void cadastraPaciente(tipoPaciente *&i, tipoPaciente *&f, char n[], char cpf[], 
 	strcpy(novo->CPF, cpf);
 	novo->prox = NULL;
 	if(i == NULL)
- 		i = f = nova;
+ 		i = f = novo;
  	else
  	{
- 		f->prox = nova;
- 		f = nova;
+ 		f->prox = novo;
+ 		f = novo;
+ 	}
+}
+
+void cadastraPacienteO (tipoPaciente *&i, tipoPaciente *&f, char n[], char cpf[], tipoData d, char C, float P, float H, char s[])
+{
+	tipoPaciente *novo;
+	novo = (tipoPaciente *) malloc(sizeof(tipoPaciente));
+	strcpy(novo->nome, n);
+	novo->nasc = d;
+	strcpy(novo->CPF, cpf);
+	novo->nasc = d;
+	novo->sexo = C;
+	novo->peso = P;
+	novo->altura = H;
+	strcpy(novo->sintomas, s);
+	novo->prox = NULL;
+	if(i == NULL)
+ 		i = f = novo;
+ 	else
+ 	{
+ 		f->prox = novo;
+ 		f = novo;
  	}
 }
 void imprimetxtFunc(int a)
@@ -307,12 +309,78 @@ bool verificaCredenciais(char c[], char cpf[], tipoFuncionario v[], int X)
     }
     return false;
 }
+
+void empilharRestantes(tipoPaciente *&i, tipoPaciente *&f, tipoPaciente *pilha)
+{
+	while(i != NULL)
+	{
+		inspilhaRemovidos(i, pilha);
+		i = i->prox;
+	}
+	i = f = NULL;
+}
+void arquivaNAtend(tipoPaciente *pilha)
+{
+    tipoPaciente *fim = NULL;
+    tipoPaciente *aux = pilha;
+    int cont = 0;
+
+    while (pilha != NULL) {
+        cont++;
+        pilha = pilha->prox;
+    }
+    fim = (tipoPaciente*)malloc(cont * sizeof(tipoPaciente));
+    pilha = aux;
+    for (int i = 0; i < cont; i++) {
+        tipoPaciente *K;
+        fim[i] = *pilha;
+        K = pilha;
+        pilha = pilha->prox;
+        free(K);
+    }
+
+    for (int i = 0; i < cont - 1; i++) {
+        for (int j = i + 1; j < cont; j++) {
+            if (strcmp(fim[i].nome, fim[j].nome) > 0) {
+                tipoPaciente temp = fim[i];
+                fim[i] = fim[j];
+                fim[j] = temp;
+            }
+        }
+    }
+
+    FILE *arquivo = fopen("naoAtendidos.txt", "w");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo naoAtendidos.txt!\n");
+        return;
+    }
+
+    for (int i = 0; i < cont; i++) {
+        fprintf(arquivo, "%s\n", fim[i].nome);
+    }
+
+    fclose(arquivo);
+}
+
+void arquivaObs(tipoPaciente* L1, tipoPaciente* L2)
+{
+	FILE* pont = fopen("observacao.txt", "w");
+    tipoPaciente* atual = L1;
+
+    while (atual != NULL) {
+        fprintf(pont, "%s\n", atual->nome);
+        atual = atual->prox;
+    }
+
+    fclose(pont);
+}
+
 //=====================================================================================================================
-void menuRecepcionista()
+void menuRecepcionista(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *&filaAt1I, tipoPaciente *&filaAt1F, tipoPaciente *&filaAt2I, tipoPaciente *&filaAt2F, tipoPaciente *&filaAt3I, tipoPaciente *&filaAt3F, tipoPaciente *&removidos)
 {
 	int op1;
 	char nomePac[MAX];
-	char CPF[tamCPF+1];
+	char cpfP[tamCPF+1];
 	tipoData D;
 	do
 	{
@@ -327,16 +395,28 @@ void menuRecepcionista()
 			printf("\nNome: ");
 			scanf(" %27[^\n]", nomePac);
 			printf("\nData Nascimento (DD/MM/AAAA): ");
-			scanf("%d/%d/%d", &nascP.dia, &nascP.mes, &nascP.ano);
+			scanf("%d/%d/%d", &D.dia, &D.mes, &D.ano);
 			cadastraPaciente(filaTI, filaTF, nomePac, cpfP, D);
 			printf("\nPaciente Registrado\n");
 		}
+
 		else if(op1 == 2)
 		{
 			printf("\n               Remover Paciente\n");
-			printf("CPF: "); // char
+			printf("CPF: ");
 			scanf(" %s", cpfP);
-			tipoPaciente *removido = removePaciente(cpfP, filaTI, filaTF)
+			tipoPaciente *removido = removePaciente(cpfP, filaTI, filaTF);
+			if(removido == NULL)
+			{
+				removido = removePaciente(cpfP, filaAt1I, filaAt1F);
+				if(removido == NULL)
+				{
+					removido = removePaciente(cpfP, filaAt2I, filaAt2F);
+					if(removido == NULL)
+						removido = removePaciente(cpfP, filaAt3I, filaAt3F);
+				}
+			}
+
 			if(removido != NULL)
 			{
 				inspilhaRemovidos(removido, removidos);
@@ -352,7 +432,7 @@ void menuRecepcionista()
 			printf("\n               Buscar Paciente\n");
 			printf("CPF: ");
 			scanf(" %s", cpfP);
-			int y = buscaPaciente(cpfP, filaTI, filaAt1, filaAt2, filaAt3);
+			int y = buscaPaciente(cpfP, filaTI, filaAt1I, filaAt2I, filaAt3I);
 			if (y == 0)
 				printf("\n\nPaciente não encontrado\n");
 			else
@@ -365,48 +445,33 @@ void menuRecepcionista()
 	}while (op1 != 0);
 	printf("                          Logout -> Menu Principal\n");
 }
-tipoPaciente removePaciente(char cpf[], tipoPaciente *&i, tipoPaciente *&f)
+
+
+tipoPaciente* removePaciente(char cpf[], tipoPaciente *&lsti, tipoPaciente *&lstf)
 {
 	tipoPaciente *p, *q;
-	tipoPaciente aux;
 	p = NULL;
-	q = i;
+	q = lsti;
 	while (q != NULL && strcmp(q->CPF, cpf) != 0)
 	{
 		p = q;
 		q = q->prox;
 	}
 	if (q == NULL)
-		return q;
+		return NULL;
+	else if (p == NULL)
+		lsti = q->prox;
 	else
-	{
-		if (p == NULL)
-		{
-			if(i == f)
-				i = f = i->prox;
-			else
-				i = i->prox;
-		}
-		else if (q->prox == NULL)
-		{
-			f = p;
-			p->prox = NULL;
-		}
-		else
-			p->prox = q->prox;
-		aux = *q;
-		free(q);
-		return aux;
-	}
+		p->prox = q->prox;
+	if (q->prox == NULL)
+		lstf = p;
+	return q;
 }
 
-void inspilhaRemovidos(tipoPaciente x, tipoPaciente *&lst)
+void inspilhaRemovidos(tipoPaciente *x, tipoPaciente *&lst)
 {
-	tipoPaciente *novo;
- 	novo = (tipoPaciente *) malloc(sizeof (tipoPaciente));
- 	novo = x;
- 	novo->prox = lst;
- 	lst = novo;
+    x->prox = lst;
+    lst = x;
 }
 
 int buscaPaciente(char cpf[], tipoPaciente *i, tipoPaciente *AT1, tipoPaciente *AT2, tipoPaciente *AT3)
@@ -451,6 +516,7 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 {
 	int op2;
 	char cpf[tamCPF+1];
+	tipoPaciente *P;
 	do
 	{
 		printf("\n///////////////////////////// MENU ENFERMEIRO ////////////////////////////\n");
@@ -461,29 +527,39 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 			if (filaTI != NULL)
 			{
 				printf("           Chamar Paciente Triagem\n");
-				printf("%s   ", filaTI->nome);
-				printf("%d   ", calculaIdade(filaTI));
-				printf("%s   ", filaTI->CPF);
+				P = removeFila(filaTI, filaTF);
+				printf("%s   ", P->nome);
+				printf("%d   ", calculaIdade(P));
+				printf("%s   ", P->CPF);
 				printf("\nPeso: ");
-				scanf("%f", &filaTI->peso);
+				scanf("%f", &P->peso);
 				printf("\nAltura: ");
-				scanf("%f", &filaTI->altura);
+				scanf("%f", &P->altura);
 				do
 				{
 					printf("Sexo (F/M):  \n");
-					scanf("%c", filaTI->sexo);
-				}while (filaTI->sexo != 'M' || filaTI->sexo != 'F');
+					scanf(" %c", &P->sexo);
+				}while (P->sexo != 'M' && P->sexo != 'F');
 
 				printf("\nSintomas: ");
-				scanf(" %[^\n]", filaTI->sintomas);
+				scanf(" %[^\n]", P->sintomas);
 				printf("\n1 - Emergente    2 - Urgente    3 - Nao Urgente\n");
-				scanf("%d", &filaTI->gravidade);
-				if(filaTI->gravidade == 1)
-					filaAtend(filaTI, filaTF, filaAt1I, filaAt1F);
-				else if(filaTI->gravidade == 2)
-					filaAtend(filaTI, filaTF, filaAt2I, filaAt2F);
-				else if(filaTI->gravidade == 3)
-					filaAtend(filaTI, filaTF, filaAt3I, filaAt3F);
+				scanf("%d", &P->gravidade);
+				if(P->gravidade == 1)
+				{
+					filaAtend(P, filaAt1I, filaAt1F);
+					printf("Paciente registrado na fila Emergente com sucesso!");
+				}
+				else if(P->gravidade == 2)
+				{
+					filaAtend(P, filaAt2I, filaAt2F);
+					printf("Paciente registrado na fila Urgente com sucesso!");
+				}
+				else if(P->gravidade == 3)
+				{
+					filaAtend(P, filaAt3I, filaAt3F);
+					printf("Paciente registrado na fila Nao Urgente com sucesso!");
+				}
 			}
 			else
 				printf("Não há pacientes na fila\n");
@@ -498,14 +574,14 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 				scanf(" %s", cpf);
 				if (strcmp(cpf, "0") != 0)
 				{
-					aux = buscaPacienteEsp(cpf, filaAt1, filaAt2, filaAt3);
+					aux = buscaPacienteEsp(cpf, filaAt1I, filaAt2I, filaAt3I);
 					char primeiroNome[MAX];
 					strcpy(primeiroNome, strtok(aux->nome, " "));
 					do
 					{
 						printf("\n\n               Visualizar Prontuario\n\n");
 						printf("%s   ", aux->nome);
-						printf("%d   ", calculaIdade(aux->nasc));
+						printf("%d   ", calculaIdade(aux));
 						printf("%s\n", aux->CPF);
 						printf("%.2f   ", aux->peso);
 						printf("%.2f   ", aux->altura);
@@ -521,7 +597,7 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 							int novaGravidade;
 							printf("\n\n            1 - Alterar Gravidade");
 							printf("\n\n   1- Emergente  2 - Urgente  3 - Nao Urgente\n");
-							printf("Digite a nova Gravidade do(a) %s", primeiroNome);
+							printf("Digite a nova Gravidade do(a) %s: ", primeiroNome);
 							scanf("%d", &novaGravidade);
 							if (aux->gravidade == novaGravidade)
 								printf("Erro na alteração\n");
@@ -535,7 +611,7 @@ void menuEnfermeiro(tipoPaciente *&filaTI, tipoPaciente *&filaTF, tipoPaciente *
 						{
 							char novoSintoma[100];
 							printf("\n\n            2 - Alterar Sintoma\n");
-							printf("\nDigite o(s) novo(s) sintoma(s) de %s", primeiroNome);
+							printf("\nDigite o(s) novo(s) sintoma(s) de %s: ", primeiroNome);
 							scanf(" %[^\n]", novoSintoma);
 							if (alteraSintoma(aux, novoSintoma) == 0)
 								printf("\nErro na alteração!\n");
@@ -560,19 +636,37 @@ int calculaIdade(tipoPaciente *P) // FUNÇÃO NÃO ATUALIZA O TEMPO DE FORMA AUT
 
     return idade;
 }
-
-void filaAtend(tipoPaciente *&i, tipoPaciente *&f, tipoPaciente *&lsti, tipoPaciente *&lstf)
+tipoPaciente* removeFila(tipoPaciente *&lsti, tipoPaciente *&lstf)
 {
 	tipoPaciente *aux;
-	aux = i;
-	if (i->prox == NULL)
-		i = f = i->prox;
+	if (lsti == NULL)
+		return NULL;
+	else if (lsti == lstf)
+	{
+		aux = lsti;
+		lsti = lstf = NULL;
+		return aux;
+	}
 	else
-		i = i->prox;
-	aux->prox = lsti;
-	lsti = aux;
+	{
+		aux = lsti;
+		lsti = lsti->prox;
+		return aux;
+	}
+}
+void filaAtend(tipoPaciente *p, tipoPaciente *&lsti, tipoPaciente *&lstf)
+{
 	if (lstf == NULL)
-		lstf = lsti;
+	{
+		lsti = lstf = p;
+	}
+	else
+	{
+		lstf->prox = p;
+		lstf = p;
+	}
+	p->prox = NULL;
+
 }
 
 tipoPaciente* buscaPacienteEsp(char cpf[], tipoPaciente *lst1, tipoPaciente *lst2, tipoPaciente *lst3)
@@ -610,15 +704,23 @@ void imprimeGravidade(int gravidade)
 void alteraGravidade(int ng, tipoPaciente *p, tipoPaciente *&L1i, tipoPaciente *&L1f, tipoPaciente *&L2i, tipoPaciente *&L2f, tipoPaciente *&L3i, tipoPaciente *&L3f)
 {
 	if (p->gravidade == 1)
+	{
 		removeNo(p, L1i, L1f);
+		printf("REMOVIDO DA FILA 1\n");
+	}
 	else if (p->gravidade == 2)
+	{
 		removeNo(p, L2i, L2f);
-	if (p->gravidade == 3)
+		printf("REMOVIDO DA FILA 2\n");
+	}
+	else if (p->gravidade == 3)
+	{
 		removeNo(p, L3i, L3f);
+		printf("REMOVIDO DA FILA 3\n");
+	}
 
+	p->gravidade = ng;
 
-	if (p->gravidade == 1)
-		removeNo(p, L1i, L2f); 
 	if (ng == 1)
 		inserefimLista(p, L1i, L1f);
 	else if(ng == 2)
@@ -627,7 +729,7 @@ void alteraGravidade(int ng, tipoPaciente *p, tipoPaciente *&L1i, tipoPaciente *
 		inserefimLista(p, L3i, L3f);
 }
 
-void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f)
+void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f) // PERCORRE A LISTA, BUSCANDO UM NÓ E O REMOVE
 {
 	tipoPaciente *p = NULL;
     tipoPaciente *q = i;
@@ -637,24 +739,16 @@ void removeNo(tipoPaciente *P, tipoPaciente *&i, tipoPaciente *&f)
         q = q->prox;
     }
 
-    if (q == NULL) {
-        // Nó não encontrado na lista
-        return;
-    }
+    if (q == NULL)
+        ;
 
-    if (p == NULL) {
-        // Nó está no início da lista
+    if (p == NULL)
         i = q->prox;
-    } else {
+    else
         p->prox = q->prox;
-    }
 
-    if (q == f) {
-        // Nó está no fim da lista
+    if (q == f)
         f = p;
-    }
-
-    free(q);
 }
 
 void inserefimLista(tipoPaciente *P, tipoPaciente *&I, tipoPaciente *&F)
@@ -676,10 +770,12 @@ int alteraSintoma(tipoPaciente *p, char ss[])
 	strcpy(p->sintomas, ss);
 	return 1;
 }
-
-void menuMedico(tipoPaciente *&lst1i )
+//==================================================================================================
+void menuMedico(tipoPaciente *&lst1i, tipoPaciente *&lst1f, tipoPaciente *&lst2i, tipoPaciente *&lst2f, tipoPaciente *&lst3i, tipoPaciente *&lst3f, tipoPaciente *&lstOi, tipoPaciente *&lstOf)
 {
 	int op3;
+	tipoPaciente *P = NULL;
+	char cpfA[tamCPF+1];
 	do
 	{
 		printf("\n/////////////////////////////// MENU MEDICO //////////////////////////////\n");
@@ -687,50 +783,63 @@ void menuMedico(tipoPaciente *&lst1i )
 		scanf("%d", &op3);
 		if (op3 == 1)
 		{
-			if(lst1i == NULL)
-				if (lst2i == NULL)
-					if (lst3i == NULL)
-						printf("Não há clientes nas filas\n");
-					else
-						consulta(lst3i, lst3f);
+			if(lst1i != NULL)
+				P = removeFila(lst1i, lst1f);
+			else
+			{
+				if (lst2i != NULL)
+					P = removeFila(lst2i, lst2f);
 				else
-					consulta(lst2i, lst2f);
-			else consulta(lst1i, lst1f);
+				{
+					if (lst3i != NULL)
+						P = removeFila(lst3i, lst3f);
+				}
+			}
+				
+			if (P == NULL)
+				printf("Não ha pacientes nas filas\n");
+			else
+				consulta(P, lstOi, lstOf);
 		}
 		else if (op3 == 2)
-		{
-			//imprimePObservacao(pacienteObs, quantP);
-			printf("PRINT TESTE - FUNCAO IMPRIMEPOBSERVACAO");
-		}
+			imprimePObservacao(lstOi);
 		else if(op3 == 3)
 		{
-			char cpfA[tamCPF+1];
 			printf("Digite o CPF do paciente para dar alta: ");
 			scanf(" %s", cpfA);
-			/*if (removePObservacao(cpfA, pacienteObs, quantP) == 1) NECESSÁRIA INTERAÇÃO COM ARQUIVO ATENDIDOS.TXT (FPRINTF EM ORDEM DE ATENDIMENTO)
-				printf("Paciente liberado!");
+			P = removePaciente(cpfA, lstOi, lstOf);
+			if (P == NULL)
+				printf("Paciente nao encontrado!\n\n");
 			else
-				printf("Erro ao liberar paciente.");*/
-			printf("PRINT TESTE - FUNCAO REMOVEPOBSERVACAO");
+			{
+				FILE* arq = fopen("atendidos.txt", "a");
+    			if (arq == NULL) 
+    				printf("Erro ao abrir arquivo atendidos.txt\n\n");
+    			else
+    			{
+        			fprintf(arq, "%s %s\n", P->nome, P->CPF);
+        			fclose(arq);
+        			printf("Consulta armazenada com sucesso!\n");
+        			printf("Paciente liberado!\n");
+    			}
+			}
 		}
 	}while (op3 != 0);
 	printf("                          Logout -> Menu Principal\n");
 }
 
-void consulta(tipoPaciente *&i, tipoPaciente *&f)
+void consulta(tipoPaciente *p, tipoPaciente *&i, tipoPaciente *&f)
 {
 	int op3a;
-	tipoPaciente *aux;
-	aux = i;
-	printf("%s   ", aux->nome);
-	printf("%d   ", calculaIdade(aux));
-	printf("%s\n", aux->CPF);
-	printf("%.2fkg   ", aux->peso);
-	printf("%2.fm", aux->altura); 
-	printf("%c\n" aux->sexo);
+	printf("%s   ", p->nome);
+	printf("%d   ", calculaIdade(p));
+	printf("%s\n", p->CPF);
+	printf("%.2fkg   ", p->peso);
+	printf("%.2fm    ", p->altura); 
+	printf("%c\n", p->sexo);
 	printf("Sintomas: \n");
-	printf("%s   ", aux->sintomas);
-	imprimeGravidade(aux->gravidade);
+	printf("%s   ", p->sintomas);
+	imprimeGravidade(p->gravidade);
 	printf("\n\n");
 	printf("1 - Encerrar Consulta\n2 - Colocar em Observacao\n");
 	scanf("%d", &op3a);
@@ -739,18 +848,18 @@ void consulta(tipoPaciente *&i, tipoPaciente *&f)
 		char parecer[100];
 		printf("Parecer da consulta: ");
 		scanf(" %[^\n]", parecer);
-		gravaAtendidos(aux, parecer);
+		gravaAtendidos(p, parecer);
+		free(p);
 	}
 	else if (op3a == 2)
 	{
-		printf("FUNCAO PARA INSERIR PACIENTES NA OBSERVACAO");
+		inserefimLista(p, i, f);
 	}
 }
 
 void gravaAtendidos(tipoPaciente *p, char parecer[])
 {
     FILE* arq = fopen("atendidos.txt", "a");
-
     if (arq == NULL) 
     	printf("Erro ao abrir arquivo atendidos.txt\n");
     else
@@ -761,56 +870,14 @@ void gravaAtendidos(tipoPaciente *p, char parecer[])
     }
 }
 
-void imprimePObservacao(tipoPaciente v[], int q)
+void imprimePObservacao(tipoPaciente *lst)
 {
-	/*for (int i = 0; i < q; i++)
+	tipoPaciente *aux = lst;
+	while (aux != NULL)
 	{
-		printf("\n%s %d %s %.2fkg %.2fm %c\n"); // NOME IDADE(FUNÇÃO) CPF PESO ALTURA SEXO
-		printf("Sintomas: %s\n", pacienteObs[i].sintoma);
-	}*/
-	printf("CHAMADA IMPRIMEOBSERVACAO FUNCIONAL"); // PARA TESTE
-}
-
-int removePObservacao(char cpf[], tipoPaciente v[], int q) // RETORNAR INTEIRO (CASO OCORRA ERRO, RETORNAR 0)
-{
-	/*for (int i = 0; i < q; i++)
-	{
-		if (strcmp(cpf, v[i].CPF) == 0)
-	}              ARRUMAR FUNCAO*/
-	printf("FUNCAO REMOVEPOBSERVACAO FUNCIONAL"); // PARA TESTE
-	return 1;
-}
-
-void txtPaciente(tipoFuncionario *&list)
-{
-	FILE *ptPaciente; //ABRIR ARQUIVO TXT
-	ptPaciente = fopen("pacientes.txt", "r");
-	if (ptPaciente == NULL)
-	{
-		printf("Erro na leitura do arquivo pacientes.txt\n");
-		return;
-	}
-	else
-	{
-		char nomeArq[MAX];
-		char cpfArq[tamCPF+1];
-		float Ps;
-		float Alt;
-		char S;
-		char sintomasArq[100];
-		int gravidadeArq;
-		tipoData nascArq;
-		struct tipoPaciente *prox; //?
-		fscanf(ptPaciente, "%d", &quantP);
-		for (int i = 0; i < quantP; i++)
-		{
-			tipoPaciente *novo;
-			novo = (tipoPaciente*) malloc(sizeof(tipoFuncionario));
-			novo->
-		}
-		paciente = (tipoPaciente*)malloc(quantP * sizeof(tipoPaciente));
-		preencheVetorP(paciente, ptPaciente, quantP);
-		fclose(ptPaciente);
+		printf("\n%s %d %s %.2fkg %.2fm %c\n", aux->nome, calculaIdade(aux), aux->CPF, aux->peso, aux->altura, aux->sexo);
+		printf("Sintomas: %s\n", aux->sintomas);
+		aux = aux->prox;
 	}
 }
 // ===============================================================================================================
